@@ -2,9 +2,11 @@
 # -*- coding: utf8 -*-
 
 """
-A (user-)friendly wrapper to nvidia-smi
+A (user-)friendly wrapper to nvidia-smi for programmatic access
 
-Author: Panagiotis Mavrogiorgos
+Edited by: Shane Caldwell
+
+Original Author: Panagiotis Mavrogiorgos
 Adapted from: https://github.com/anderskm/gputil
 
 """
@@ -130,7 +132,7 @@ def _get_gpu(line):
 def get_gpus():
     output = subprocess.check_output(shlex.split(NVIDIA_SMI_GET_GPUS))
     lines = output.decode("utf-8").split(os.linesep)
-    gpus = (_get_gpu(line) for line in lines if line.strip())
+    gpus = list(_get_gpu(line) for line in lines if line.strip())
     return gpus
 
 
@@ -203,40 +205,10 @@ def is_nvidia_smi_on_path():
     return shutil.which("nvidia-smi")
 
 
-def _nvsmi_ls(args):
-    gpus = list(
-        get_available_gpus(
-            gpu_util_max=args.gpu_util_max,
-            mem_util_max=args.mem_util_max,
-            mem_free_min=args.mem_free_min,
-            include_ids=args.ids,
-            include_uuids=args.uuids,
-        )
-    )
-    gpus.sort(key=operator.attrgetter(args.sort))
-    for gpu in _take(args.limit, gpus):
-        output = gpu.to_json() if args.json else gpu
-        print(output)
-
-
-def _nvsmi_ps(args):
-    processes = get_gpu_processes()
-    if args.ids or args.uuids:
-        for proc in processes:
-            if proc.gpu_id in args.ids or proc.gpu_uuid in args.uuids:
-                output = proc.to_json() if args.json else proc
-                print(output)
-    else:
-        for proc in processes:
-            output = proc.to_json() if args.json else proc
-            print(output)
-
 if __name__ == "__main__":
     if not is_nvidia_smi_on_path():
         sys.exit("Error: Couldn't find 'nvidia-smi' in $PATH: %s" % os.environ["PATH"])
     gpus = get_gpus()
-    for gpu in gpus:
-        print(gpu)
     gpu_0 = gpus[0]
     gpu_1 = gpus[1]
     processes = get_gpu_processes(gpu_0)
