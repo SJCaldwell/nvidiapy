@@ -1,16 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
 
-"""
-A (user-)friendly wrapper to nvidia-smi for programmatic access
-
-Edited by: Shane Caldwell
-
-Original Author: Panagiotis Mavrogiorgos
-Adapted from: https://github.com/anderskm/gputil
-
-"""
-
 import argparse
 import json
 import itertools as it
@@ -22,7 +12,7 @@ import subprocess
 import sys
 
 
-__version__ = "0.4.2"
+__version__ = "0.1.1"
 
 
 NVIDIA_SMI_GET_GPUS = "nvidia-smi --query-gpu=index,uuid,utilization.gpu,memory.total,memory.used,memory.free,driver_version,name,gpu_serial,display_active,display_mode,temperature.gpu --format=csv,noheader,nounits"
