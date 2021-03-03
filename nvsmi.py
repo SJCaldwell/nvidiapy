@@ -80,7 +80,7 @@ class GPUProcess(object):
         self.used_memory = used_memory
 
     def __repr__(self):
-        msg = "pid: {pid} | gpu_id: {gpu_id} | gpu_uuid: {gpu_uuid} | gpu_name: {gpu_name} | used_memory: {used_memory:7.1f}MB"
+        msg = f"pid: {self.pid} | gpu_id: {self.gpu_id} | gpu_uuid: {self.gpu_uuid} | gpu_name: {self.gpu_name} | used_memory: {self.used_memory:7.1f}MB"
         msg = msg.format(**self.__dict__)
         return msg
 
@@ -146,13 +146,15 @@ def _get_gpu_proc(line, gpu_uuid_to_id_map):
     return proc
 
 
-def get_gpu_processes():
-    gpu_uuid_to_id_map = {gpu.uuid: gpu.id for gpu in get_gpus()}
+def get_gpu_processes(gpu):
+    gpu_uuid_to_id_map = {gpu.uuid: gpu.id}
     output = subprocess.check_output(shlex.split(NVIDIA_SMI_GET_PROCS))
     lines = output.decode("utf-8").split(os.linesep)
     processes = [
         _get_gpu_proc(line, gpu_uuid_to_id_map) for line in lines if line.strip()
     ]
+    # filter out processes with -1, not relevant to current query
+    processes = [x for x in processes if x.gpu_id != -1]
     return processes
 
 
@@ -229,23 +231,14 @@ def _nvsmi_ps(args):
             output = proc.to_json() if args.json else proc
             print(output)
 
-
-def validate_ids_and_uuids(args):
-    gpus = list(get_gpus())
-    gpu_ids = {gpu.id for gpu in gpus}
-    gpu_uuids = {gpu.uuid for gpu in gpus}
-    invalid_ids = args.ids.difference(gpu_ids)
-    invalid_uuids = args.uuids.difference(gpu_uuids)
-    if invalid_ids:
-        sys.exit(f"The following GPU ids are not available: {invalid_ids}")
-    if invalid_uuids:
-        sys.exit(f"The following GPU uuids are not available: {invalid_uuids}")
-
-
 if __name__ == "__main__":
-    # cli mode
     if not is_nvidia_smi_on_path():
         sys.exit("Error: Couldn't find 'nvidia-smi' in $PATH: %s" % os.environ["PATH"])
     gpus = get_gpus()
     for gpu in gpus:
         print(gpu)
+    gpu_0 = gpus[0]
+    gpu_1 = gpus[1]
+    processes = get_gpu_processes(gpu_0)
+    for process in processes:
+        print(process)
