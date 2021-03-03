@@ -58,8 +58,12 @@ class GPU(object):
         self.temperature = temperature
 
     def __repr__(self):
-        msg = "id: {id} | UUID: {uuid} | gpu_util: {gpu_util:5.1f}% | mem_util: {mem_util:5.1f}% | mem_free: {mem_free:7.1f}MB |  mem_total: {mem_total:7.1f}MB"
+        msg = f"id: {self.id} | UUID: {self.uuid} | gpu_util: {self.gpu_util:5.1f}% | mem_util: {self.mem_util:5.1f}% | mem_free: {self.mem_free:7.1f}MB |  mem_total: {self.mem_total:7.1f}MB"
         msg = msg.format(**self.__dict__)
+        return msg
+
+    def __str__(self):
+        msg = f"id: {self.id} | UUID: {self.uuid} | gpu_util: {self.gpu_util:5.1f}% | mem_util: {self.mem_util:5.1f}% | mem_free: {self.mem_free:7.1f}MB | mem_total: {self.mem_total:7.1f}MB"
         return msg
 
     def to_json(self):
@@ -188,90 +192,6 @@ def get_available_gpus(
     return available_gpus
 
 
-def get_parser():
-    main_parser = argparse.ArgumentParser(
-        prog="nvsmi", description="A (user-)friendy interface for nvidia-smi"
-    )
-    main_parser.add_argument(
-        "--version",
-        action="version",
-        version="%(prog)s {version}".format(version=__version__),
-    )
-
-    subparsers = main_parser.add_subparsers(
-        help="Choose mode of operation", dest="mode", title="subcommands"
-    )  # noqa
-    ls_parser = subparsers.add_parser("ls", help="List available GPUs")
-    ps_parser = subparsers.add_parser("ps", help="Examine the process of a gpu.")
-
-    # list
-    ls_parser.add_argument(
-        "--ids", nargs="+", metavar="", help="List of GPU IDs to include"
-    )
-
-    ls_parser.add_argument(
-        "--uuids", nargs="+", metavar="", help="List of GPU uuids to include"
-    )
-
-    ls_parser.add_argument(
-        "--limit",
-        type=int,
-        default=999,
-        metavar="",
-        help="Limit the number of the GPUs",
-    )
-    ls_parser.add_argument(
-        "--mem-free-min",
-        type=float,
-        default=0,
-        metavar="",
-        help="The minimum amount of free memory (in MB)",
-    )
-    ls_parser.add_argument(
-        "--mem-util-max",
-        type=int,
-        default=100,
-        metavar="",
-        help="The maximum amount of memory [0, 100]",
-    )
-    ls_parser.add_argument(
-        "--gpu-util-max",
-        type=int,
-        default=100,
-        metavar="",
-        help="The maximum amount of load [0, 100]",
-    )
-    ls_parser.add_argument(
-        "--sort",
-        default="id",
-        choices=["id", "gpu_util", "mem_util"],
-        metavar="",
-        help="Sort the GPUs using the specified attribute",
-    )
-    ls_parser.add_argument(
-        "--json", action="store_true", help="Show results in JSON format"
-    )
-
-    # processes
-    ps_parser.add_argument(
-        "--ids",
-        nargs="+",
-        metavar="",
-        help="Show only the processes of the GPU matching the provided ids",
-    )
-    ps_parser.add_argument(
-        "--uuids",
-        nargs="+",
-        metavar="",
-        help="Show only the processes of the GPU matching the provided UUIDs",
-    )
-    ps_parser.add_argument(
-        "--json", action="store_true", help="Show results in JSON format"
-    )
-
-    return main_parser
-
-
 def _take(n, iterable):
     "Return first n items of the iterable as a list"
     return it.islice(iterable, n)
@@ -322,27 +242,10 @@ def validate_ids_and_uuids(args):
         sys.exit(f"The following GPU uuids are not available: {invalid_uuids}")
 
 
-def _main():
-    parser = get_parser()
-    args = parser.parse_args()
-    # Cast ids and uuids to sets
-    if args.mode is None:
-        parser.print_help()
-        sys.exit()
-    else:
-        args.ids = set(args.ids) if args.ids else set()
-        args.uuids = set(args.uuids) if args.uuids else set()
-        validate_ids_and_uuids(args)
-        if args.mode == "ls":
-            _nvsmi_ls(args)
-        elif args.mode == "ps":
-            _nvsmi_ps(args)
-        else:
-            parser.print_help()
-
-
 if __name__ == "__main__":
     # cli mode
     if not is_nvidia_smi_on_path():
         sys.exit("Error: Couldn't find 'nvidia-smi' in $PATH: %s" % os.environ["PATH"])
-    _main()
+    gpus = get_gpus()
+    for gpu in gpus:
+        print(gpu)
